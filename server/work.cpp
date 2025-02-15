@@ -1,5 +1,6 @@
 #include "head.h"
 
+
 void msgsend(int work_sock, string message){
     char *buffer = new char[4096];
     strcpy(buffer, message.c_str());
