@@ -27,7 +27,7 @@ string base_file = "base.txt";
 string file_error = "error.txt";
 
 std::string MD(std::string sah);
-void errors(std::string error, std::string name);
+void errors(std::string error, std::string name, std::string login = "NONE");
 void filesend(int work_sock, string filename);
 int autorized(int work_sock, string file_name, string file_error);
 
@@ -36,21 +36,35 @@ class Server{
 private:
 
 public:
-    string* comstr(int argc, char *argv[]);
     int self_addr(string file_error);
     int client_addr(int s, string file_error);
 };
 
-class BindingError: public std::invalid_argument
+class BindingError: public std::invalid_argument //Обработка ошибок при бинде сокета
 {
 public:
     BindingError(const std::string& s) : std::invalid_argument(s) {}
     BindingError(const char * s) : std::invalid_argument(s) {}
 };
 
-class AuthError: public std::invalid_argument
+class AuthError: public std::invalid_argument //Обработка ошибок при авторизации
 {
 public:
     AuthError(const std::string& s) : std::invalid_argument(s) {}
     AuthError(const char * s) : std::invalid_argument(s) {}
 };
+
+class AllowError: public std::invalid_argument //Обработка ошибок при проверке привелегий
+{
+public:
+    AllowError(const std::string& s) : std::invalid_argument(s) {}
+    AllowError(const char * s) : std::invalid_argument(s) {}
+};
+
+class InterfaceError: public std::invalid_argument //Обработка ошибок при проверке привелегий
+{
+public:
+    InterfaceError(const std::string& s) : std::invalid_argument(s) {}
+    InterfaceError(const char * s) : std::invalid_argument(s) {}
+};
+
