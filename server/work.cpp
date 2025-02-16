@@ -7,7 +7,7 @@ void msgsend(int work_sock, string message){
     send(work_sock, buffer, message.length(), 0);
 }
 
-void filesend (int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
+void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
     const int BUFFER_SIZE = 4096;
     filesystem::path filePath(filename);
     std::string extension = filePath.extension().string();
@@ -42,7 +42,7 @@ void filesend (int work_sock, string filename, bool allow_txt, bool allow_bin, s
     }
 }
 
-void interface(int work_sock, char arg,string path, string login){
+void interface(int work_sock, char arg,string path, string login, string version){
     std::vector<std::string> fileList;
     switch(arg){
         case 'l': //Список всех файлов
@@ -63,7 +63,9 @@ void interface(int work_sock, char arg,string path, string login){
             string fullPath = path + filename;
 
             if (std::filesystem::exists(fullPath)) { //Проверка на существование искомого файла
-                filesend(work_sock, filename);
+                bool allow_txt, allow_bin;
+                std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
+                filesend(work_sock, filename, allow_txt, allow_bin, login);
             } else {
                 string error = "Файл с таким именем не существует";
                 msgsend(work_sock, error);
@@ -124,18 +126,16 @@ int Server::client_addr(int s, string file_error){
     }
 }
 
-void authorization(int work_sock,string salt){
-    char mess[255];
-
-    string version;
-    recv(work_sock, &version, sizeof(version), 0); //Проверка версии клиента
+std::tuple<bool,bool> version_check(string version, int work_sock){
     if (version == "1.0"){
         bool allow_txt = 1;
         bool allow_bin = 0;
+        return {allow_txt, allow_bin};
     }
     else if (version == "2.0"){
         bool allow_txt = 0;
         bool allow_bin = 1;
+        return {allow_txt, allow_bin};
     }
     else{
         string error = "Неизвестная версия клиента"; //ОБработка ошибок по версии клиента
@@ -143,6 +143,11 @@ void authorization(int work_sock,string salt){
         close(work_sock);
         throw AuthError(std::string("Unidentified version"));
     }
+    
+}
+
+void authorization(int work_sock,string salt){
+    char mess[255];
 
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
     recv(work_sock, &mess, sizeof(mess), 0);
@@ -167,13 +172,19 @@ void authorization(int work_sock,string salt){
     }
 }
 
-int autorized(int work_sock, string base_file, string file_error){ //Авторизация
+int autorized(int work_sock, string base_file, string file_error, string user_log){ //Авторизация
     string ok = "OK";
     string salt = "2D2D2D2D2D2D2D22";
     string err = "ERROR";
     string error;
     char msg[255];
     string path = "/home/bouncybone/Документы/Учеба/Курсовая 6 семестр/server/client_files/"; //Путь к файлам пользователей
+
+    bool allow_txt, allow_bin;
+    string version;
+    recv(work_sock, &version, sizeof(version), 0); //Проверка версии клиента
+    std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
+
     authorization(work_sock, salt);
 
     //Получение данных о пароле и логине
@@ -201,37 +212,51 @@ int autorized(int work_sock, string base_file, string file_error){ //Автор�
         recv(work_sock, msg, sizeof(msg), 0);
         
     
-    if(pass != msg){
-        cout << pass << endl;
-        cout << msg << endl;
-        msgsend(work_sock,  err);
-        error = "Ошибка пароля";
-        errors(error, file_error);
-        close(work_sock);
-        throw AuthError(std::string("Password error"));
-        return 1;
+        if(pass != msg){
+            cout << pass << endl;
+            cout << msg << endl;
+            msgsend(work_sock,  err);
+            error = "Ошибка пароля";
+            errors(error, file_error);
+            close(work_sock);
+            throw AuthError(std::string("Password error"));
+            return 1;
 
-    }else{
-        bool flag = 1;
-        while(flag){
-            msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
-            char arg;
-            recv(work_sock, &arg, sizeof(arg), 0);
-            if (arg != 'l' or arg !='d' or arg !='q'){
-                error = "Неправильный аргумент";
-                errors(error, file_error, login);
-                close(work_sock);
-                throw InterfaceError(std::string("Wrong argument"));
+        }else{
+            ofstream log;
+            log.open(user_log, ios::app);
+            if(log.is_open()){
+                tm* timeinfo = localtime(&(time_t){time(NULL)});
+                log<<"Session started for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl; //Запись времени начала сессии клиента
             }
-            else if (arg == 'q'){
-                flag = 0;
-                exit(0);
+            log.close();
+
+            bool flag = 1;
+            while(flag){
+                msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
+                char arg;
+                recv(work_sock, &arg, sizeof(arg), 0);
+                if (arg != 'l' or arg !='d' or arg !='q'){
+                    error = "Неправильный аргумент";
+                    errors(error, file_error, login);
+                    close(work_sock);
+                    throw InterfaceError(std::string("Wrong argument"));
+                }
+                else if (arg == 'q'){
+                    flag = 0;
+                    exit(0);
+                }
+                else
+                    interface(work_sock, arg, path, login, version);
             }
-            else
-                interface(work_sock, arg, path, login);
-            
         }
     }
-}
-return 1;
+    ofstream log;
+    log.open(user_log, ios::app);
+    if(log.is_open()){
+        tm* timeinfo = localtime(&(time_t){time(NULL)});
+        log<<"Session ended for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl;
+    }
+    close(work_sock);
+    return 1;
 }

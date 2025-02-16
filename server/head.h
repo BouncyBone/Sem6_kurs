@@ -26,10 +26,14 @@ using namespace std;
 string base_file = "base.txt";
 string file_error = "error.txt";
 
-std::string MD(std::string sah);
-void errors(std::string error, std::string name, std::string login = "NONE");
-void filesend(int work_sock, string filename);
-int autorized(int work_sock, string file_name, string file_error);
+void msgsend(int work_sock, string message); //Отправка сообщений
+void errors(std::string error, std::string name, std::string login = "NONE"); //Обработка ошибок
+void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ); //Отправка файлов
+int autorized(int work_sock, string file_name, string file_error,string user_log); //Взаимодействие с авторизованным пользователем
+void interface(int work_sock, char arg,string path, string login, string version); //Интерфейс пользователя
+void authorization(int work_sock,string salt); //Авторизация пользователя
+std::tuple<bool,bool> version_check(string version, int work_sock); //Проверка версии пользователя
+
 
 //Класс сервера
 class Server{
