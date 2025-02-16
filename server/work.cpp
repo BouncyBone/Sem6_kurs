@@ -23,19 +23,21 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
 
     else{ //Отправка файла
         std::ifstream file(filePath, std::ios::binary);  // Открываем файл в бинарном режиме
+        cout<<filePath<<endl;
         if (!file) {
+            cout<<"1"<<endl;
             string error = "Ошибка отправки файла";
             msgsend(work_sock, error);
             errors(error, file_error, login);
             //throw AllowError(std::string("Error open file"));
         }
         else{
+            cout<<"2"<<endl;
             char buffer[4096];
             while (file.read(buffer, sizeof(buffer))) {
                 send(work_sock, buffer, sizeof(buffer), 0);
             }
             send(work_sock, buffer, file.gcount(), 0);  // Отправка последнего блока
-
             file.close();
         }
     }
@@ -252,6 +254,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     recv(work_sock, msg, sizeof(msg), 0);
     string login(msg);
     sleep(1);
+    cout<<login<<endl;
 
     bool log_exist = find_login(base_file,login);
     if(!log_exist){
@@ -266,6 +269,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
         msgsend(work_sock,  salt);
         string pass = find_password(base_file,login);
         msgsend(work_sock, "Введите пароль");
+        
         char get_pass[1024] = {0};
         recv(work_sock, get_pass, sizeof(get_pass) - 1, 0);
         string received_pass(get_pass);

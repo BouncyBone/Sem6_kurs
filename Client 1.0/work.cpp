@@ -12,15 +12,17 @@ void receiveFile(int server_sock, const std::string& filename) {
     ssize_t bytesReceived;
     std::string serverMessage;
     // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
-    serverMessage = recv(server_sock, buffer, sizeof(buffer), 0);
+    bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0);
     /*if (bytesReceived <= 0) {
         std::cerr << "Ошибка при получении данных\n";
         return;
     }
     // Преобразуем полученное в строку
-    serverMessage.assign(buffer, bytesReceived);*/
+    */
+    serverMessage.assign(buffer, bytesReceived);
 
     if (serverMessage == "Ошибка отправки файла" || "Версия клиента не соответствует") {
+        cout<<serverMessage<<endl;
         std::cerr << "Ошибка на сервере: " << serverMessage << std::endl;
         return;  
     }
