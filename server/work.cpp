@@ -128,6 +128,49 @@ int Server::client_addr(int s, string file_error){
     }
 }
 
+bool find_login(const std::string& base_file, const std::string& target_login) {
+    std::ifstream file(base_file);
+    if (!file.is_open()) {
+        std::cerr << "Ошибка открытия файла\n";
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {  
+        std::istringstream iss(line);
+        std::string login;
+
+        if (std::getline(iss, login, ':')) { 
+            if (login == target_login) {
+                return true; // Логин найден
+            }
+        }
+    }
+    return false; // Логин не найден
+}
+
+std::string find_password(const std::string& base_file, const std::string& target_login) {
+    std::ifstream file(base_file);
+    if (!file.is_open()) {
+        std::cerr << "Ошибка открытия файла\n";
+        return "";
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {  
+        std::istringstream iss(line);
+        std::string login, password;
+        
+        if (std::getline(iss, login, ':') && std::getline(iss, password)) {
+            if (login == target_login) {
+                return password; // Найден пароль для нужного логина
+            }
+        }
+    }
+    return ""; // Если логин не найден
+}
+
+
 std::tuple<bool,bool> version_check(string version, int work_sock){
     if (version == "1.0"){
         bool allow_txt = 1;
@@ -149,27 +192,46 @@ std::tuple<bool,bool> version_check(string version, int work_sock){
 }
 
 void authorization(int work_sock,string salt, string base_file){
-    char mess[255];
-
+    char mess[512];
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
     recv(work_sock, &mess, sizeof(mess), 0);
-    if(mess =="регистрация"){
-        string new_log, new_pass;
+    string mess_str(mess);
+
+    if(mess_str == "регистрация"){
+        char *new_log = new char[1024];
+        char *new_pass = new char[1024];
+        
         msgsend(work_sock, "Введите логин");
-        recv(work_sock, &new_log, sizeof(new_log), 0);
-        msgsend(work_sock,  salt);
+        recv(work_sock, new_log, 1024, 0);
+        new_log[1023] = '\0';
+        cout<< "логин: "<< string(new_log)<<endl;
+        msgsend(work_sock, salt);
+
+        cout<<"Salt sended"<<endl;
+        sleep(1);
+
         msgsend(work_sock, "Введите пароль");
-        recv(work_sock, &new_pass, sizeof(new_pass), 0);
+        recv(work_sock, new_pass, 1024, 0);
+        new_pass[1023] = '\0';
+        
         fstream file1;
         file1.open(base_file, std::ios::app); //Запись в файл данных регистрации
-        file1 << new_log,":",new_pass;
+        file1 << new_log<<":"<< new_pass<<"\n";
         file1.close();
-        msgsend(work_sock, "Регистрация успешно завершена");
+        delete[] new_log;
+        delete[] new_pass;
+        msgsend(work_sock, "Регистрация успешно завершена\n");
+        cout << "Регистрация успешно завершена" << endl;
+        sleep(1);
     }
-    else if(mess != "вход"){
+    else if(mess_str != "вход" && mess_str != "регистрация"){
+
+        cout<<'2'<<endl;
+
         string error = "Registration error";
         msgsend(work_sock, error);
         errors(error, file_error);
+        close(work_sock);
         throw AuthError(std::string("Auth error"));
     }
 }
@@ -183,24 +245,27 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     string path = "/client_files/"; //Путь к файлам пользователей
 
     bool allow_txt, allow_bin;
-    string version;
-    recv(work_sock, &version, sizeof(version), 0); //Проверка версии клиента
+    char version[255];
+    recv(work_sock, version, sizeof(version), 0); //Проверка версии клиента
     std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
 
     authorization(work_sock, salt, base_file);
 
     //Получение данных о пароле и логине
+    cout <<"Начало авторизации" <<endl;
     msgsend(work_sock, "Введите логин");
-    recv(work_sock, &msg, sizeof(msg), 0);
-    string message = msg;
     memset(msg, 0, sizeof(msg));
-    string login, pass;
-    fstream file;
-    file.open(base_file);
-    getline (file, login, ':');
-    getline(file, pass);
+    recv(work_sock, msg, sizeof(msg), 0);
+    string login(msg);
 
-    if(message != login){
+    cout<<"enter_login: "<<login<<endl;
+
+    memset(msg, 0, sizeof(msg));
+    fstream file;
+    bool log_exist = find_login(base_file,login);
+    string pass = find_password(base_file,login);
+
+    if(!log_exist){
         msgsend(work_sock,  err);
         error = "Ошибка логина";
         errors(error, file_error);
@@ -211,13 +276,20 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     else{
         //Отправка соли клиенту
         msgsend(work_sock,  salt);
+
+        cout<<"Salt sended"<<endl;
+        sleep(1);
+
+        msgsend(work_sock, "Введите пароль");
         char msg[255] = "";
         recv(work_sock, msg, sizeof(msg), 0);
-        
+        string msg_str=string(msg);
     
-        if(pass != msg){
+        if(pass != msg_str){
+
             cout << pass << endl;
             cout << msg << endl;
+
             msgsend(work_sock,  err);
             error = "Ошибка пароля";
             errors(error, file_error);

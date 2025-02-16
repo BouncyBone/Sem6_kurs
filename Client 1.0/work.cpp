@@ -11,7 +11,9 @@ void receiveMessage(int sock) { //Прием сообщения
 }
 
 void sendMessage(int sock, std::string message) { //Отправка сообщения
-    send(sock, message.c_str(), message.size(), 0);
+    char *buffer = new char[1024];
+    strcpy(buffer, message.c_str());
+    send(sock, buffer, message.length(), 0);
 }
 
 string MD(string password,string salt){ // Кодирование пароля
@@ -40,6 +42,7 @@ int connection() { //Взаимодействие с сервером
     }
 
     sendMessage(sock,version); //Отправка версии клиента
+    cout<<version<<endl;
     std::cout << "Успешное соединение с сервером" << std::endl;
     receiveMessage(sock);
 
@@ -54,24 +57,27 @@ int connection() { //Взаимодействие с сервером
         std::cin >> login;
         sendMessage(sock, login);
 
-        string salt;
-        recv(sock, &salt, sizeof(salt), 0);
+        char salt[512];
+        recv(sock, salt, sizeof(salt), 0);
         receiveMessage(sock);
         std::cin >> password;
-        password+=salt;
-        
+        password+=string(salt);
         string hashq = MD(password,salt);
         sendMessage(sock, hashq);
         receiveMessage(sock);
     }
 
-    std::string login, password; //Вход на сервер
-    receiveMessage(sock);
-    std::cin >> login;
-    sendMessage(sock, login);
+    std::string log, password; //Вход на сервер
+    receiveMessage(sock); //Введите логин
+    std::cin >> log;
+    sendMessage(sock, log);
+
+    char salt[512];
+    recv(sock, salt, sizeof(salt), 0);
     receiveMessage(sock);
     std::cin >> password;
-    string hashq = MD(password);
+    password+=string(salt);
+    string hashq = MD(password,salt);
     sendMessage(sock, hashq);
 
     receiveMessage(sock);

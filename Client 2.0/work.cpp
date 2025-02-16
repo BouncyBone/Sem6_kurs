@@ -69,9 +69,13 @@ int connection() { //Взаимодействие с сервером
     receiveMessage(sock);
     std::cin >> login;
     sendMessage(sock, login);
+    
+    string salt;
+    recv(sock, &salt, sizeof(salt), 0);
     receiveMessage(sock);
     std::cin >> password;
-    string hashq = MD(password);
+    password+=salt;
+    string hashq = MD(password, salt);
     sendMessage(sock, hashq);
 
     receiveMessage(sock);
