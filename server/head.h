@@ -18,7 +18,7 @@
 #include <getopt.h> //Обработка аргументов
 #include <thread> //Многопоточность
 #include <filesystem> //Работа с файлами
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
+#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1;
 using namespace CryptoPP;
 using namespace std;
 #include <cryptopp/md5.h>

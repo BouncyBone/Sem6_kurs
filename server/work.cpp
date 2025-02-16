@@ -235,4 +235,3 @@ int autorized(int work_sock, string base_file, string file_error){ //Автор�
 }
 return 1;
 }
-
