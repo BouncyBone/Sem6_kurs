@@ -10,7 +10,6 @@ void msgsend(int work_sock, string message){
 }
 
 void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
-    const int BUFFER_SIZE = 4096;
     filesystem::path filePath(filename);
     std::string extension = filePath.extension().string();
 
@@ -23,39 +22,39 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
     }
 
     else{ //Отправка файла
-        std::ifstream file(filename, std::ios::binary);  // Открываем файл в бинарном режиме
+        std::ifstream file(filePath, std::ios::binary);  // Открываем файл в бинарном режиме
         if (!file) {
             string error = "Ошибка отправки файла";
-            msgsend(work_sock, error + ", попробуйте позднее.");
+            msgsend(work_sock, error);
             errors(error, file_error, login);
-            throw AllowError(std::string("Error open file"));
-            return;
+            //throw AllowError(std::string("Error open file"));
         }
         else{
-            char buffer[BUFFER_SIZE];
+            char buffer[4096];
             while (file.read(buffer, sizeof(buffer))) {
                 send(work_sock, buffer, sizeof(buffer), 0);
             }
             send(work_sock, buffer, file.gcount(), 0);  // Отправка последнего блока
 
             file.close();
-            msgsend(work_sock, "Загрузка завершена");
         }
     }
 }
 
 void interface(int work_sock, char arg,string path, string login, string version){
-    std::vector<std::string> fileList;
+    string fileListStr;
     switch(arg){
         case 'l': //Список всех файлов
             msgsend(work_sock, "Список файлов: \n");
-            for (const auto &entry : std::filesystem::directory_iterator(path)){
-                fileList.push_back(entry.path().filename().string());
-                string fileListStr;
-                for (const auto &file : fileList) {
-                    fileListStr += file + "   ";
-                }
-                msgsend(work_sock, fileListStr);
+            for (const auto &entry : std::filesystem::directory_iterator(path)) {
+                fileListStr += entry.path().filename().string() + "   ";
+            }
+            if (!fileListStr.empty()) {
+                msgsend(work_sock, fileListStr+"\n\n");
+                return;
+            } else {
+                msgsend(work_sock, "Файлов нет.");
+                return;
             }
             
         case 'd': //Запрос загрузки файла
@@ -67,6 +66,7 @@ void interface(int work_sock, char arg,string path, string login, string version
             if (std::filesystem::exists(fullPath)) { //Проверка на существование искомого файла
                 bool allow_txt, allow_bin;
                 std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
+                sleep(1);
                 filesend(work_sock, filename, allow_txt, allow_bin, login);
             } else {
                 string error = "Файл с таким именем не существует";
@@ -207,9 +207,6 @@ void authorization(int work_sock,string salt, string base_file){
         cout<< "логин: "<< string(new_log)<<endl;
         msgsend(work_sock, salt);
 
-        cout<<"Salt sended"<<endl;
-        sleep(1);
-
         msgsend(work_sock, "Введите пароль");
         recv(work_sock, new_pass, 1024, 0);
         new_pass[1023] = '\0';
@@ -226,8 +223,6 @@ void authorization(int work_sock,string salt, string base_file){
     }
     else if(mess_str != "вход" && mess_str != "регистрация"){
 
-        cout<<'2'<<endl;
-
         string error = "Registration error";
         msgsend(work_sock, error);
         errors(error, file_error);
@@ -242,7 +237,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     string err = "ERROR";
     string error;
     char msg[255];
-    string path = "/client_files/"; //Путь к файлам пользователей
+    string path = "Client_files/"; //Путь к файлам пользователей
 
     bool allow_txt, allow_bin;
     char version[255];
@@ -252,49 +247,39 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     authorization(work_sock, salt, base_file);
 
     //Получение данных о пароле и логине
-    cout <<"Начало авторизации" <<endl;
     msgsend(work_sock, "Введите логин");
     memset(msg, 0, sizeof(msg));
     recv(work_sock, msg, sizeof(msg), 0);
     string login(msg);
+    sleep(1);
 
-    cout<<"enter_login: "<<login<<endl;
-
-    memset(msg, 0, sizeof(msg));
-    fstream file;
     bool log_exist = find_login(base_file,login);
-    string pass = find_password(base_file,login);
-
     if(!log_exist){
         msgsend(work_sock,  err);
         error = "Ошибка логина";
         errors(error, file_error);
         close(work_sock);
-        file.close();
         throw AuthError(std::string("Login error"));
     }
     else{
         //Отправка соли клиенту
         msgsend(work_sock,  salt);
-
-        cout<<"Salt sended"<<endl;
-        sleep(1);
-
+        string pass = find_password(base_file,login);
         msgsend(work_sock, "Введите пароль");
-        char msg[255] = "";
-        recv(work_sock, msg, sizeof(msg), 0);
-        string msg_str=string(msg);
-    
-        if(pass != msg_str){
+        char get_pass[1024] = {0};
+        recv(work_sock, get_pass, sizeof(get_pass) - 1, 0);
+        string received_pass(get_pass);
+        received_pass.erase(received_pass.find_last_not_of("\r\n") + 1);
+        
+        if(pass != received_pass){
 
             cout << pass << endl;
-            cout << msg << endl;
+            cout << received_pass << endl;
 
             msgsend(work_sock,  err);
             error = "Ошибка пароля";
             errors(error, file_error);
             close(work_sock);
-            file.close();
             throw AuthError(std::string("Password error"));
             return 1;
 
@@ -313,18 +298,20 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
                 char arg;
                 recv(work_sock, &arg, sizeof(arg), 0);
-                if (arg != 'l' or arg !='d' or arg !='q'){
+                char argc=char(arg);
+                if (argc != 'l' && argc !='d' && argc !='q'){
                     error = "Неправильный аргумент";
                     errors(error, file_error, login);
                     close(work_sock);
                     throw InterfaceError(std::string("Wrong argument"));
                 }
-                else if (arg == 'q'){
+                else if (argc == 'q'){
                     flag = 0;
                     exit(0);
                 }
-                else
+                else{
                     interface(work_sock, arg, path, login, version);
+                }
             }
         }
     }

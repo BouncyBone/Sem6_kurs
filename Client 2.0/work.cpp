@@ -1,17 +1,62 @@
 #include "head.h"
 
-#define BUFFER_SIZE 4096
 string version = "2.0";
 
+void receiveFile(int server_sock, const std::string& filename) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Ошибка открытия файла для записи\n";
+        return;
+    }
+    char buffer[4096];
+    ssize_t bytesReceived;
+    std::string serverMessage;
+    // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
+    serverMessage = recv(server_sock, buffer, sizeof(buffer), 0);
+    /*if (bytesReceived <= 0) {
+        std::cerr << "Ошибка при получении данных\n";
+        return;
+    }
+    // Преобразуем полученное в строку
+    serverMessage.assign(buffer, bytesReceived);*/
+
+    if (serverMessage == "Ошибка отправки файла" || "Версия клиента не соответствует") {
+        std::cerr << "Ошибка на сервере: " << serverMessage << std::endl;
+        return;  
+    }
+    else{
+        file.write(buffer, bytesReceived); 
+
+        while ((bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0)) > 0) {
+            file.write(buffer, bytesReceived);
+            
+            if (bytesReceived < sizeof(buffer)) {
+                break;
+            }
+        }
+
+        if (bytesReceived < 0) {
+            std::cerr << "Ошибка при получении данных\n";
+        } else {
+            std::cout << "Файл успешно загружен: " << filename << std::endl;
+        }
+
+        file.close();
+    }
+}
+
+
 void receiveMessage(int sock) { //Прием сообщения
-    char buffer[BUFFER_SIZE];
+    char buffer[4096];
     memset(buffer, 0, sizeof(buffer));
     recv(sock, buffer, sizeof(buffer), 0);
     std::cout << buffer << std::endl;
 }
 
 void sendMessage(int sock, std::string message) { //Отправка сообщения
-    send(sock, message.c_str(), message.size(), 0);
+    char *buffer = new char[1024];
+    strcpy(buffer, message.c_str());
+    send(sock, buffer, message.length(), 0);
 }
 
 string MD(string password,string salt){ // Кодирование пароля
@@ -44,7 +89,6 @@ int connection() { //Взаимодействие с сервером
     receiveMessage(sock);
 
     std::string command;
-    std::cout << "Введите команду (вход/регистрация): ";
     std::cin >> command;
     sendMessage(sock, command);
 
@@ -54,31 +98,28 @@ int connection() { //Взаимодействие с сервером
         std::cin >> login;
         sendMessage(sock, login);
 
-        string salt;
-        recv(sock, &salt, sizeof(salt), 0);
+        char salt[512];
+        recv(sock, salt, sizeof(salt), 0);
         receiveMessage(sock);
         std::cin >> password;
-        password+=salt;
-        
+        password+=string(salt);
         string hashq = MD(password,salt);
         sendMessage(sock, hashq);
         receiveMessage(sock);
     }
 
-    std::string login, password; //Вход на сервер
-    receiveMessage(sock);
-    std::cin >> login;
-    sendMessage(sock, login);
-    
-    string salt;
-    recv(sock, &salt, sizeof(salt), 0);
+    std::string log, password; //Вход на сервер
+    receiveMessage(sock); //Введите логин
+    std::cin >> log;
+    sendMessage(sock, log);
+
+    char salt[512];
+    recv(sock, salt, sizeof(salt), 0);
     receiveMessage(sock);
     std::cin >> password;
-    password+=salt;
-    string hashq = MD(password, salt);
+    password+=string(salt);
+    string hashq = MD(password,salt);
     sendMessage(sock, hashq);
-
-    receiveMessage(sock);
     
     char option;
     while (true) {
@@ -93,6 +134,8 @@ int connection() { //Взаимодействие с сервером
             std::string filename;
             std::cin >> filename;
             sendMessage(sock, filename);
+            sleep(1);
+            receiveFile(sock, filename);
         } else if (option == 'q') {
             break;
         }
