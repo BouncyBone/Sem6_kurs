@@ -14,7 +14,7 @@ void sendMessage(int sock, std::string message) { //Отправка сообщ�
     send(sock, message.c_str(), message.size(), 0);
 }
 
-string MD(string password){ // Кодирование пароля
+string MD(string password,string salt){ // Кодирование пароля
     Weak1::MD5 hash;
     string hashq;
     HexEncoder encoder(new StringSink(hashq));
@@ -53,9 +53,14 @@ int connection() { //Взаимодействие с сервером
         receiveMessage(sock);
         std::cin >> login;
         sendMessage(sock, login);
+
+        string salt;
+        recv(sock, &salt, sizeof(salt), 0);
         receiveMessage(sock);
         std::cin >> password;
-        string hashq = MD(password);
+        password+=salt;
+        
+        string hashq = MD(password,salt);
         sendMessage(sock, hashq);
         receiveMessage(sock);
     }

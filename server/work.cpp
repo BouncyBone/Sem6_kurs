@@ -1,5 +1,7 @@
 #include "head.h"
-
+string file_error = "error.txt";
+string base_file = "base.txt";
+string user_log = "usrlog.txt";
 
 void msgsend(int work_sock, string message){
     char *buffer = new char[4096];
@@ -146,7 +148,7 @@ std::tuple<bool,bool> version_check(string version, int work_sock){
     
 }
 
-void authorization(int work_sock,string salt){
+void authorization(int work_sock,string salt, string base_file){
     char mess[255];
 
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
@@ -185,7 +187,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     recv(work_sock, &version, sizeof(version), 0); //Проверка версии клиента
     std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
 
-    authorization(work_sock, salt);
+    authorization(work_sock, salt, base_file);
 
     //Получение данных о пароле и логине
     msgsend(work_sock, "Введите логин");
@@ -203,6 +205,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
         error = "Ошибка логина";
         errors(error, file_error);
         close(work_sock);
+        file.close();
         throw AuthError(std::string("Login error"));
     }
     else{
@@ -219,6 +222,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             error = "Ошибка пароля";
             errors(error, file_error);
             close(work_sock);
+            file.close();
             throw AuthError(std::string("Password error"));
             return 1;
 
@@ -226,7 +230,8 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             ofstream log;
             log.open(user_log, ios::app);
             if(log.is_open()){
-                tm* timeinfo = localtime(&(time_t){time(NULL)});
+                time_t seconds = time(NULL);
+                tm* timeinfo = localtime(&seconds);
                 log<<"Session started for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl; //Запись времени начала сессии клиента
             }
             log.close();
@@ -254,7 +259,8 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     ofstream log;
     log.open(user_log, ios::app);
     if(log.is_open()){
-        tm* timeinfo = localtime(&(time_t){time(NULL)});
+        time_t seconds = time(NULL);
+        tm* timeinfo = localtime(&seconds);
         log<<"Session ended for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl;
     }
     close(work_sock);
