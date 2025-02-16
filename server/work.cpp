@@ -178,7 +178,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     string err = "ERROR";
     string error;
     char msg[255];
-    string path = "/home/bouncybone/Документы/Учеба/Курсовая 6 семестр/server/client_files/"; //Путь к файлам пользователей
+    string path = "/client_files/"; //Путь к файлам пользователей
 
     bool allow_txt, allow_bin;
     string version;
