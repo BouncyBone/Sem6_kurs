@@ -100,3 +100,29 @@ Session started for user:andre:Mon Feb 17 15:42:54 2025
 
 Session ended for user:andre:Mon Feb 17 15:43:36 2025
 
+Session started for user:user2:Mon Feb 17 15:48:23 2025
+
+Session started for user:andre:Mon Feb 17 15:48:29 2025
+
+Session started for user:andre:Mon Feb 17 16:33:44 2025
+
+Session started for user::Mon Feb 17 17:19:21 2025
+
+Session started for user::Mon Feb 17 17:22:39 2025
+
+Session started for user::Mon Feb 17 19:18:22 2025
+
+Session started for user::Mon Feb 17 19:20:48 2025
+
+Session started for user::Mon Feb 17 19:35:01 2025
+
+Session started for user::Mon Feb 17 19:36:52 2025
+
+Session started for user::Mon Feb 17 19:39:15 2025
+
+Session started for user::Mon Feb 17 19:41:03 2025
+
+Session started for user:andre:Mon Feb 17 20:31:33 2025
+
+Session started for user:andre:Mon Feb 17 20:37:29 2025
+

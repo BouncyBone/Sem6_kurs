@@ -96,7 +96,6 @@ int connection() { //Взаимодействие с сервером
 
         char salt[1024] = {0};
         recv(sock, salt, sizeof(salt)-1, 0);
-        cout<<"salt: \n"<<salt<<endl;
         receiveMessage(sock);
         //salt[1023] = '\0';
         std::cin >> password;

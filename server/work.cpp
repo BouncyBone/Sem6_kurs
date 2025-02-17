@@ -249,75 +249,75 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
 
     authorization(work_sock, salt, base_file);
-
+    string login;
     //Получение данных о пароле и логине
     msgsend(work_sock, "Введите логин");
-    memset(msg, 0, sizeof(msg));
-    recv(work_sock, msg, sizeof(msg), 0);
-    string login(msg);
-    sleep(1);
-    bool log_exist = find_login(base_file,login);
-    sleep(1);
-    if(!log_exist){
-        msgsend(work_sock,  err);
-        error = "Ошибка логина";
-        errors(error, file_error);
-        close(work_sock);
-        throw AuthError(std::string("Login error"));
+    while (true) {
+        memset(msg, 0, sizeof(msg));
+        recv(work_sock, msg, sizeof(msg), 0);
+        login = string(msg);
+        bool log_exist = find_login(base_file, login);
+        if (!log_exist) {
+            error = "Ошибка логина";
+            errors(error, file_error);
+            msgsend(work_sock, "Введите логин заново");
+        } else {
+            msgsend(work_sock, "OK");
+            break;
+        }
     }
-    else{
-        //Отправка соли клиенту
-        msgsend(work_sock,  salt);
-        string pass = find_password(base_file,login);
-        msgsend(work_sock, "Введите пароль");
-        
+    // Отправка соли клиенту
+    sleep(1);
+    msgsend(work_sock, salt);
+    string pass = find_password(base_file, login);
+    sleep(1);
+    msgsend(work_sock, "Введите пароль");
+
+    int attempts = 0;
+    while (attempts < 3) {
         char get_pass[2048] = {0};
         recv(work_sock, get_pass, sizeof(get_pass) - 1, 0);
         string received_pass(get_pass);
         received_pass.erase(received_pass.find_last_not_of("\r\n") + 1);
-        
-        if(pass != received_pass){
-
-            cout << pass << endl;
-            cout << received_pass << endl;
-
-            msgsend(work_sock,  err);
-            error = "Ошибка пароля";
-            errors(error, file_error);
-            close(work_sock);
-            throw AuthError(std::string("Password error"));
-            return 1;
-
-        }else{
+    
+        if (pass == received_pass) {
+            msgsend(work_sock, "OK");
             ofstream log;
             log.open(user_log, ios::app);
-            if(log.is_open()){
+            if (log.is_open()) {
                 time_t seconds = time(NULL);
                 tm* timeinfo = localtime(&seconds);
-                log<<"Session started for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl; //Запись времени начала сессии клиента
+                log << "Session started for user" << ":" << login << ":" << asctime(timeinfo) << endl; // Запись времени начала сессии клиента
             }
             log.close();
 
             bool flag = 1;
-            while(flag){
+            while (flag) {
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
-                char arg[512]={0};
+                char arg[512] = {0};
                 recv(work_sock, arg, sizeof(arg), 0);
                 string argg(arg);
                 char argc = argg[0];
-                if (argc != 'l' && argc !='d' && argc !='q'){
-                    error = "Неправильный аргумент";
-                    errors(error, file_error, login);
-                    close(work_sock);
-                    throw InterfaceError(std::string("Wrong argument"));
-                }
-                else if (argc == 'q'){
+                if (argc == 'q') {
                     flag = 0;
-                }
-                else{
+                } else {
                     interface(work_sock, argc, path, login, version);
                     sleep(1);
                 }
+            }
+            return 0;
+        } else {
+            attempts++;
+            if (attempts < 3) {
+                msgsend(work_sock, "Неверный пароль. Попробуйте снова.");
+                error = "Wrond password for user: ";
+                errors(error+login, file_error);
+            } else {
+                msgsend(work_sock, err);
+                error = "Ошибка пароля. Превышено количество попыток";
+                errors(error, file_error);
+                close(work_sock);
+                throw AuthError(std::string("Password error"));
             }
         }
     }
