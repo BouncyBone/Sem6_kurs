@@ -4,15 +4,17 @@ string base_file = "base.txt";
 string user_log = "usrlog.txt";
 
 void msgsend(int work_sock, string message){
-    char *buffer = new char[4096];
-    strcpy(buffer, message.c_str());
-    send(work_sock, buffer, message.length(), 0);
+    char buffer[4096];  // Используем локальный массив, чтобы избежать утечек памяти
+    memset(buffer, 0, sizeof(buffer));  // Заполняем нулями
+    strncpy(buffer, message.c_str(), sizeof(buffer) - 1);  // Копируем с ограничением
+    send(work_sock, buffer, strlen(buffer)+1, 0);
 }
+
 
 void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
     filesystem::path filePath(filename);
     std::string extension = filePath.extension().string();
-
+    cout<<extension<<endl;
     if ((extension == ".txt" and allow_txt == 0) or (extension == ".bin" and allow_bin == 0)){ //Проверка привелегий доступа
         string error = "Версия клиента не соответствует";
         msgsend(work_sock, error);
@@ -25,14 +27,12 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
         std::ifstream file(filePath, std::ios::binary);  // Открываем файл в бинарном режиме
         cout<<filePath<<endl;
         if (!file) {
-            cout<<"1"<<endl;
             string error = "Ошибка отправки файла";
             msgsend(work_sock, error);
             errors(error, file_error, login);
             //throw AllowError(std::string("Error open file"));
         }
         else{
-            cout<<"2"<<endl;
             char buffer[4096];
             while (file.read(buffer, sizeof(buffer))) {
                 send(work_sock, buffer, sizeof(buffer), 0);
@@ -47,12 +47,12 @@ void interface(int work_sock, char arg,string path, string login, string version
     string fileListStr;
     switch(arg){
         case 'l': //Список всех файлов
-            msgsend(work_sock, "Список файлов: \n");
             for (const auto &entry : std::filesystem::directory_iterator(path)) {
                 fileListStr += entry.path().filename().string() + "   ";
             }
             if (!fileListStr.empty()) {
-                msgsend(work_sock, fileListStr+"\n\n");
+                msgsend(work_sock, "Список файлов: "+ fileListStr+"\n\n");
+                sleep(1);
                 return;
             } else {
                 msgsend(work_sock, "Файлов нет.");
@@ -75,7 +75,7 @@ void interface(int work_sock, char arg,string path, string login, string version
                 msgsend(work_sock, error);
                 errors(error, file_error, login);
                 throw InterfaceError(std::string("File not exist"));
-                return;
+                //return;
             }
     
     }
@@ -141,13 +141,18 @@ bool find_login(const std::string& base_file, const std::string& target_login) {
     while (std::getline(file, line)) {  
         std::istringstream iss(line);
         std::string login;
-
+        //cout<<"Логин найден"<<endl;
         if (std::getline(iss, login, ':')) { 
+            //cout<<"login: "<<login<<endl;
+            //cout<<"target_login: "<<target_login<<endl;
             if (login == target_login) {
+                file.close();
+                //cout<<"file closed "<<endl;
                 return true; // Логин найден
             }
         }
     }
+    file.close();
     return false; // Логин не найден
 }
 
@@ -209,6 +214,7 @@ void authorization(int work_sock,string salt, string base_file){
         cout<< "логин: "<< string(new_log)<<endl;
         msgsend(work_sock, salt);
 
+        cout<<"Salt sended"<<endl;
         msgsend(work_sock, "Введите пароль");
         recv(work_sock, new_pass, 1024, 0);
         new_pass[1023] = '\0';
@@ -220,7 +226,6 @@ void authorization(int work_sock,string salt, string base_file){
         delete[] new_log;
         delete[] new_pass;
         msgsend(work_sock, "Регистрация успешно завершена\n");
-        cout << "Регистрация успешно завершена" << endl;
         sleep(1);
     }
     else if(mess_str != "вход" && mess_str != "регистрация"){
@@ -255,8 +260,9 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     string login(msg);
     sleep(1);
     cout<<login<<endl;
-
     bool log_exist = find_login(base_file,login);
+    cout<<"log_exist: "<<log_exist<<endl;
+    sleep(1);
     if(!log_exist){
         msgsend(work_sock,  err);
         error = "Ошибка логина";
@@ -267,10 +273,11 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     else{
         //Отправка соли клиенту
         msgsend(work_sock,  salt);
+        cout<<"Salt sended "<<endl;
         string pass = find_password(base_file,login);
         msgsend(work_sock, "Введите пароль");
         
-        char get_pass[1024] = {0};
+        char get_pass[2048] = {0};
         recv(work_sock, get_pass, sizeof(get_pass) - 1, 0);
         string received_pass(get_pass);
         received_pass.erase(received_pass.find_last_not_of("\r\n") + 1);
@@ -300,9 +307,11 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             bool flag = 1;
             while(flag){
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
-                char arg;
-                recv(work_sock, &arg, sizeof(arg), 0);
-                char argc=char(arg);
+                cout<<"msg sended"<<endl;
+                char arg[512]={0};
+                recv(work_sock, arg, sizeof(arg), 0);
+                string argg(arg);
+                char argc = argg[0];
                 if (argc != 'l' && argc !='d' && argc !='q'){
                     error = "Неправильный аргумент";
                     errors(error, file_error, login);
@@ -314,7 +323,8 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                     exit(0);
                 }
                 else{
-                    interface(work_sock, arg, path, login, version);
+                    interface(work_sock, argc, path, login, version);
+                    sleep(1);
                 }
             }
         }
