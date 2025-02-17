@@ -3,12 +3,7 @@
 string version = "1.0";
 
 void receiveFile(int server_sock, const std::string& filename) {
-    std::ofstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
-        std::cerr << "Ошибка открытия файла для записи\n";
-        return;
-    }
-    char buffer[4096];
+        char buffer[4096];
     ssize_t bytesReceived;
     std::string serverMessage;
     // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
@@ -21,6 +16,11 @@ void receiveFile(int server_sock, const std::string& filename) {
         return;  // Завершаем функцию, НЕ создавая файл
     }
     else{
+        std::ofstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Ошибка открытия файла для записи\n";
+            return;
+        }
         file.write(buffer, bytesReceived); 
 
         while ((bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0)) > 0) {

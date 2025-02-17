@@ -82,3 +82,5 @@ error binding:Mon Feb 17 22:45:56 2025
 :user-NONE
 error binding:Mon Feb 17 22:45:57 2025
 :user-NONE
+Версия клиента не соответствует:Mon Feb 17 23:05:26 2025
+:user-andre
