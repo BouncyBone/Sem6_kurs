@@ -42,7 +42,7 @@ void receiveFile(int server_sock, const std::string& filename) {
 
 
 void receiveMessage(int sock) { //Прием сообщения
-    char buffer[4096];
+    char buffer[4096] = {0};
     memset(buffer, 0, sizeof(buffer));
     recv(sock, buffer, sizeof(buffer) -1, 0);
     std::cout << buffer << std::endl;
@@ -83,9 +83,16 @@ int connection() { //Взаимодействие с сервером
     sendMessage(sock,version); //Отправка версии клиента
     std::cout << "Успешное соединение с сервером" << std::endl;
     receiveMessage(sock);
-
     std::string command;
-    std::cin >> command;
+    while (true){
+        std::cin >> command;
+        if (command == "регистрация" || command == "вход"){
+            break;
+        } 
+        else{
+            cout<<"Введен неправильный аргумент"<<endl;
+        }
+    }
     sendMessage(sock, command);
 
     if (command == "регистрация") { //Регистрация
@@ -107,21 +114,61 @@ int connection() { //Взаимодействие с сервером
 
     std::string log, password; //Вход на сервер
     receiveMessage(sock); //Введите логин
-    std::cin >> log;
-    sendMessage(sock, log);
-
-    char salt[1024] = {0};
-    recv(sock, salt, sizeof(salt)-1, 0);
-    receiveMessage(sock);
-    std::cin >> password;
-    password+=string(salt);
-    string hashq = MD(password,salt);
-    sendMessage(sock, hashq);
+    while(true){
+        std::cin >> log;
+        sendMessage(sock, log);
+        char flag[1024]={0};
+        recv(sock, flag, sizeof(flag)-1,0);
+        string flg(flag);
+        //sleep(1);
+        if (flg.find("OK")!= std::string::npos){
+            break;
+        }
+        else{
+            cout<<flg<<endl;
+        }
+    }
+    char salt[2048] = {0};
+    recv(sock, salt, sizeof(salt) - 1, 0);
+    sleep(1);
+    receiveMessage(sock); //Введите пароль
+    while (true){
+        std::cin >> password;
+        password+=string(salt);
+        string hashq = MD(password,salt);
+        sendMessage(sock, hashq);
+        //sleep(1);
+        char flag[1024]={0};
+        recv(sock, flag, sizeof(flag)-1,0);
+        string flg(flag);
+        //sleep(1);
+        if (flg.find("OK")!= std::string::npos){
+            break;
+        }
+        else if (flg.find("Ошибка пароля. Превышено количество попыток")!= std::string::npos){
+            cout<<flg<<endl;
+            close(sock);
+            return 1;
+        }
+        else{
+            cout<<flg<<endl;
+        }
+    }
     
     char option;
     while (true) {
         receiveMessage(sock);
-        std::cin >> option;
+
+        while (true){ //Проверка правильности введенного аргумента
+            std::cin >> option;
+            if (option != 'q' && option != 'd' && option != 'l'){ 
+                cout<<"Введен неправильный аргумент"<<endl;
+            }
+            else{
+                break;
+            }
+        }
+        
         send(sock, &option, sizeof(option), 0);
 
         if (option == 'l') {
@@ -131,7 +178,7 @@ int connection() { //Взаимодействие с сервером
             std::string filename;
             std::cin >> filename;
             sendMessage(sock, filename);
-            sleep(1);
+            //sleep(1);
             receiveFile(sock, filename);
         } else if (option == 'q') {
             break;

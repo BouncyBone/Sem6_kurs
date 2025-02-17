@@ -120,7 +120,7 @@ int connection() { //Взаимодействие с сервером
         char flag[1024]={0};
         recv(sock, flag, sizeof(flag)-1,0);
         string flg(flag);
-        sleep(1);
+        //sleep(1);
         if (flg.find("OK")!= std::string::npos){
             break;
         }

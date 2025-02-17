@@ -7,9 +7,12 @@ void msgsend(int work_sock, string message){
     char buffer[4096];  // Используем локальный массив, чтобы избежать утечек памяти
     memset(buffer, 0, sizeof(buffer));  // Заполняем нулями
     strncpy(buffer, message.c_str(), sizeof(buffer) - 1);  // Копируем с ограничением
-    send(work_sock, buffer, strlen(buffer)+1, 0);
+    if (send(work_sock, buffer, strlen(buffer)+1, 0) == -1) {
+        cerr << "Ошибка отправки сообщения" << endl;
+        close(work_sock);
+        throw runtime_error("Client disconnected unexpectedly");
+    }
 }
-
 
 void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
     filesystem::path filePath(filename);
@@ -88,6 +91,15 @@ void errors(string error, string name, string login){ //Запись ошибк�
         tm* timeinfo = localtime(&seconds);
         file<<error<<':'<<asctime(timeinfo) <<":"<<"user-"<<login<<endl;
         cout << "error: " << error << endl;
+    }
+}
+
+void log_session_end(const string& login) {
+    ofstream log(user_log, ios::app);
+    if (log.is_open()) {
+        time_t seconds = time(NULL);
+        tm* timeinfo = localtime(&seconds);
+        log << "Session ended for user:" << login << ":" << asctime(timeinfo) << endl;
     }
 }
 
@@ -198,6 +210,7 @@ std::tuple<bool,bool> version_check(string version, int work_sock){
 }
 
 void authorization(int work_sock,string salt, string base_file){
+    string login = "SYSTEM";
     char mess[512];
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
     recv(work_sock, &mess, sizeof(mess), 0);
@@ -208,12 +221,20 @@ void authorization(int work_sock,string salt, string base_file){
         char *new_pass = new char[1024];
         
         msgsend(work_sock, "Введите логин");
-        recv(work_sock, new_log, 1024, 0);
+        if (recv(work_sock, new_log, 1024, 0)<=0){
+            cerr << "Client disconnected during registration" << endl;
+            close(work_sock);
+            return;
+        }
         new_log[1023] = '\0';
         msgsend(work_sock, salt);
 
         msgsend(work_sock, "Введите пароль");
-        recv(work_sock, new_pass, 1024, 0);
+        if (recv(work_sock, new_pass, 1024, 0)<=0){
+            cerr << "Client disconnected during registration" << endl;
+            close(work_sock);
+            return;
+        }
         new_pass[1023] = '\0';
         
         fstream file1;
@@ -254,7 +275,11 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     msgsend(work_sock, "Введите логин");
     while (true) {
         memset(msg, 0, sizeof(msg));
-        recv(work_sock, msg, sizeof(msg), 0);
+        if (recv(work_sock, msg, sizeof(msg), 0) <= 0) {
+            cerr << "Client disconnected during login input." << endl;
+            close(work_sock);
+            return 1;
+        }
         login = string(msg);
         bool log_exist = find_login(base_file, login);
         if (!log_exist) {
@@ -276,7 +301,12 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     int attempts = 0;
     while (attempts < 3) {
         char get_pass[2048] = {0};
-        recv(work_sock, get_pass, sizeof(get_pass) - 1, 0);
+        if (recv(work_sock, get_pass, sizeof(get_pass) - 1, 0) <= 0) {
+            cerr << "Client disconnected during password input." << endl;
+            log_session_end(login);
+            close(work_sock);
+            return 1;
+        }
         string received_pass(get_pass);
         received_pass.erase(received_pass.find_last_not_of("\r\n") + 1);
     
@@ -296,7 +326,12 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                 //sleep(1);
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
                 char arg[512] = {0};
-                recv(work_sock, arg, sizeof(arg), 0);
+                if (recv(work_sock, arg, sizeof(arg), 0) <= 0) {
+                    cerr << "Client disconnected during command selection." << endl;
+                    log_session_end(login);
+                    close(work_sock);
+                    return 1;
+                }
                 string argg(arg);
                 char argc = argg[0];
                 if (argc == 'q') {
