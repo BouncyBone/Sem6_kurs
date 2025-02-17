@@ -124,6 +124,9 @@ int connection() { //Взаимодействие с сервером
         if (flg.find("OK")!= std::string::npos){
             break;
         }
+        else{
+            cout<<flg<<endl;
+        }
     }
     char salt[2048] = {0};
     recv(sock, salt, sizeof(salt) - 1, 0);
@@ -134,22 +137,31 @@ int connection() { //Взаимодействие с сервером
         password+=string(salt);
         string hashq = MD(password,salt);
         sendMessage(sock, hashq);
-        sleep(1);
-        char flag[512]={0};
+        //sleep(1);
+        char flag[1024]={0};
         recv(sock, flag, sizeof(flag)-1,0);
         string flg(flag);
+        //sleep(1);
         if (flg.find("OK")!= std::string::npos){
             break;
         }
+        else if (flg.find("Ошибка пароля. Превышено количество попыток")!= std::string::npos){
+            cout<<flg<<endl;
+            close(sock);
+            return 1;
+        }
+        else{
+            cout<<flg<<endl;
+        }
     }
     
-    string option;
+    char option;
     while (true) {
         receiveMessage(sock);
 
         while (true){ //Проверка правильности введенного аргумента
             std::cin >> option;
-            if (option[0] != 'q' && option[0] != 'd' && option[0] != 'l'){ 
+            if (option != 'q' && option != 'd' && option != 'l'){ 
                 cout<<"Введен неправильный аргумент"<<endl;
             }
             else{
@@ -159,16 +171,16 @@ int connection() { //Взаимодействие с сервером
         
         send(sock, &option, sizeof(option), 0);
 
-        if (option[0] == 'l') {
+        if (option == 'l') {
             receiveMessage(sock);
-        } else if (option[0] == 'd') {
+        } else if (option == 'd') {
             receiveMessage(sock);
             std::string filename;
             std::cin >> filename;
             sendMessage(sock, filename);
-            sleep(1);
+            //sleep(1);
             receiveFile(sock, filename);
-        } else if (option[0] == 'q') {
+        } else if (option == 'q') {
             break;
         }
         sleep(1);

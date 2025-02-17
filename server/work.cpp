@@ -293,6 +293,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
 
             bool flag = 1;
             while (flag) {
+                //sleep(1);
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
                 char arg[512] = {0};
                 recv(work_sock, arg, sizeof(arg), 0);
@@ -313,8 +314,8 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                 error = "Wrond password for user: ";
                 errors(error+login, file_error);
             } else {
-                msgsend(work_sock, err);
                 error = "Ошибка пароля. Превышено количество попыток";
+                msgsend(work_sock, error);
                 errors(error, file_error);
                 close(work_sock);
                 throw AuthError(std::string("Password error"));
