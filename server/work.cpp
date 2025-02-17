@@ -18,18 +18,17 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
         string error = "Версия клиента не соответствует";
         msgsend(work_sock, error);
         errors(error, file_error, login);
-        throw AllowError(std::string("Permission Denied"));
-        return;
+        //throw AllowError(std::string("Permission Denied"));
+        //return;
     }
 
     else{ //Отправка файла
         std::ifstream file(filePath, std::ios::binary);  // Открываем файл в бинарном режиме
-        cout<<filePath<<endl;
         if (!file) {
             string error = "Ошибка отправки файла";
             msgsend(work_sock, error);
             errors(error, file_error, login);
-            return;
+            //return;
             //throw AllowError(std::string("Error open file"));
         }
         else{
@@ -65,7 +64,6 @@ void interface(int work_sock, char arg,string path, string login, string version
             char filename[1024];
             recv(work_sock, &filename, sizeof(filename), 0);
             string fullPath = path + string(filename);
-            cout<<"FullPath: "<<fullPath<<endl;
             if (std::filesystem::exists(fullPath)) { //Проверка на существование искомого файла
                 bool allow_txt, allow_bin;
                 std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
@@ -212,10 +210,8 @@ void authorization(int work_sock,string salt, string base_file){
         msgsend(work_sock, "Введите логин");
         recv(work_sock, new_log, 1024, 0);
         new_log[1023] = '\0';
-        cout<< "логин: "<< string(new_log)<<endl;
         msgsend(work_sock, salt);
 
-        cout<<"Salt sended"<<endl;
         msgsend(work_sock, "Введите пароль");
         recv(work_sock, new_pass, 1024, 0);
         new_pass[1023] = '\0';
@@ -260,9 +256,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     recv(work_sock, msg, sizeof(msg), 0);
     string login(msg);
     sleep(1);
-    cout<<login<<endl;
     bool log_exist = find_login(base_file,login);
-    cout<<"log_exist: "<<log_exist<<endl;
     sleep(1);
     if(!log_exist){
         msgsend(work_sock,  err);
@@ -274,7 +268,6 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     else{
         //Отправка соли клиенту
         msgsend(work_sock,  salt);
-        cout<<"Salt sended "<<endl;
         string pass = find_password(base_file,login);
         msgsend(work_sock, "Введите пароль");
         
@@ -308,7 +301,6 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             bool flag = 1;
             while(flag){
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
-                cout<<"msg sended"<<endl;
                 char arg[512]={0};
                 recv(work_sock, arg, sizeof(arg), 0);
                 string argg(arg);
@@ -321,7 +313,6 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                 }
                 else if (argc == 'q'){
                     flag = 0;
-                    exit(0);
                 }
                 else{
                     interface(work_sock, argc, path, login, version);

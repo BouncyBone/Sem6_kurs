@@ -12,28 +12,23 @@ void receiveFile(int server_sock, const std::string& filename) {
     ssize_t bytesReceived;
     std::string serverMessage;
     // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
-    serverMessage = recv(server_sock, buffer, sizeof(buffer), 0);
-    /*if (bytesReceived <= 0) {
-        std::cerr << "Ошибка при получении данных\n";
-        return;
-    }
-    // Преобразуем полученное в строку
-    serverMessage.assign(buffer, bytesReceived);*/
-
-    if (serverMessage == "Ошибка отправки файла" || "Версия клиента не соответствует") {
-        std::cerr << "Ошибка на сервере: " << serverMessage << std::endl;
-        return;  
+    memset(buffer, 0, sizeof(buffer));
+    bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0);
+    serverMessage.assign(buffer, bytesReceived);
+    if (serverMessage.find("Ошибка отправки файла") != std::string::npos || 
+        serverMessage.find("Версия клиента не соответствует") != std::string::npos) {
+        cout << serverMessage << std::endl;
+        return;  // Завершаем функцию, НЕ создавая файл
     }
     else{
         file.write(buffer, bytesReceived); 
 
         while ((bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0)) > 0) {
-            file.write(buffer, bytesReceived);
-            
-            if (bytesReceived < sizeof(buffer)) {
-                break;
-            }
+        if (std::string(buffer, bytesReceived) == "<END_OF_FILE>") {
+            break;
         }
+        file.write(buffer, bytesReceived);
+}
 
         if (bytesReceived < 0) {
             std::cerr << "Ошибка при получении данных\n";
@@ -49,18 +44,19 @@ void receiveFile(int server_sock, const std::string& filename) {
 void receiveMessage(int sock) { //Прием сообщения
     char buffer[4096];
     memset(buffer, 0, sizeof(buffer));
-    recv(sock, buffer, sizeof(buffer), 0);
+    recv(sock, buffer, sizeof(buffer) -1, 0);
     std::cout << buffer << std::endl;
 }
 
 void sendMessage(int sock, std::string message) { //Отправка сообщения
-    char *buffer = new char[1024];
-    strcpy(buffer, message.c_str());
-    send(sock, buffer, message.length(), 0);
+    char buffer[4096];  // Используем локальный массив, чтобы избежать утечек памяти
+    memset(buffer, 0, sizeof(buffer));  // Заполняем нулями
+    strncpy(buffer, message.c_str(), sizeof(buffer) - 1);  // Копируем с ограничением
+    send(sock, buffer, strlen(buffer)+1, 0);
 }
 
 string MD(string password,string salt){ // Кодирование пароля
-    Weak1::MD5 hash;
+    Weak::MD5 hash;
     string hashq;
     HexEncoder encoder(new StringSink(hashq));
     StringSource(password, true, new HashFilter(hash, new Redirector(encoder)));
@@ -98,9 +94,11 @@ int connection() { //Взаимодействие с сервером
         std::cin >> login;
         sendMessage(sock, login);
 
-        char salt[512];
-        recv(sock, salt, sizeof(salt), 0);
+        char salt[1024] = {0};
+        recv(sock, salt, sizeof(salt)-1, 0);
+        cout<<"salt: \n"<<salt<<endl;
         receiveMessage(sock);
+        //salt[1023] = '\0';
         std::cin >> password;
         password+=string(salt);
         string hashq = MD(password,salt);
@@ -113,8 +111,8 @@ int connection() { //Взаимодействие с сервером
     std::cin >> log;
     sendMessage(sock, log);
 
-    char salt[512];
-    recv(sock, salt, sizeof(salt), 0);
+    char salt[1024] = {0};
+    recv(sock, salt, sizeof(salt)-1, 0);
     receiveMessage(sock);
     std::cin >> password;
     password+=string(salt);
@@ -126,7 +124,7 @@ int connection() { //Взаимодействие с сервером
         receiveMessage(sock);
         std::cin >> option;
         send(sock, &option, sizeof(option), 0);
-        
+
         if (option == 'l') {
             receiveMessage(sock);
         } else if (option == 'd') {
@@ -139,6 +137,7 @@ int connection() { //Взаимодействие с сервером
         } else if (option == 'q') {
             break;
         }
+        sleep(1);
     }
     
     close(sock);

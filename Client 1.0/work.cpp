@@ -14,18 +14,11 @@ void receiveFile(int server_sock, const std::string& filename) {
     // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
     memset(buffer, 0, sizeof(buffer));
     bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0);
-    /*if (bytesReceived <= 0) {
-        std::cerr << "Ошибка при получении данных\n";
-        return;
-    }
-    // Преобразуем полученное в строку
-    */
     serverMessage.assign(buffer, bytesReceived);
-
-    if (serverMessage == "Ошибка отправки файла" || serverMessage == "Версия клиента не соответствует") {
-        cout<<serverMessage<<endl;
-        std::cerr << "Ошибка на сервере: " << serverMessage << std::endl;
-        return;  
+    if (serverMessage.find("Ошибка отправки файла") != std::string::npos || 
+        serverMessage.find("Версия клиента не соответствует") != std::string::npos) {
+        cout << serverMessage << std::endl;
+        return;  // Завершаем функцию, НЕ создавая файл
     }
     else{
         file.write(buffer, bytesReceived); 
@@ -128,7 +121,6 @@ int connection() { //Взаимодействие с сервером
     
     char option;
     while (true) {
-        sleep(1);
         receiveMessage(sock);
         std::cin >> option;
         send(sock, &option, sizeof(option), 0);

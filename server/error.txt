@@ -714,3 +714,61 @@ Registration error:Mon Feb 17 11:48:06 2025
 :user-andre
 Неправильный аргумент:Mon Feb 17 14:44:58 2025
 :user-andre
+Версия клиента не соответствует:Mon Feb 17 14:50:19 2025
+:user-andre
+Ошибка пароля:Mon Feb 17 14:53:51 2025
+:user-NONE
+Версия клиента не соответствует:Mon Feb 17 14:57:35 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:01:36 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:07:56 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:22:42 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:30:15 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:36:04 2025
+:user-andre
+error binding:Mon Feb 17 15:36:45 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:50 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:51 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:51 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:52 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:53 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:54 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:55 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:56 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:57 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:58 2025
+:user-NONE
+error binding:Mon Feb 17 15:36:59 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:00 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:00 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:01 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:02 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:02 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:03 2025
+:user-NONE
+error binding:Mon Feb 17 15:37:04 2025
+:user-NONE
+Версия клиента не соответствует:Mon Feb 17 15:37:38 2025
+:user-andre
+Версия клиента не соответствует:Mon Feb 17 15:43:29 2025
+:user-andre
