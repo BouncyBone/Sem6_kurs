@@ -710,3 +710,7 @@ Registration error:Mon Feb 17 11:48:06 2025
 :user-andre
 Неправильный аргумент:Mon Feb 17 13:48:49 2025
 :user-andre
+Ошибка отправки файла:Mon Feb 17 14:44:50 2025
+:user-andre
+Неправильный аргумент:Mon Feb 17 14:44:58 2025
+:user-andre

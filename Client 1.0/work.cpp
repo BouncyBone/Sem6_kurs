@@ -12,6 +12,7 @@ void receiveFile(int server_sock, const std::string& filename) {
     ssize_t bytesReceived;
     std::string serverMessage;
     // Получаем первое сообщение от сервера (может быть как ошибка, так и начало файла)
+    memset(buffer, 0, sizeof(buffer));
     bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0);
     /*if (bytesReceived <= 0) {
         std::cerr << "Ошибка при получении данных\n";
@@ -21,7 +22,7 @@ void receiveFile(int server_sock, const std::string& filename) {
     */
     serverMessage.assign(buffer, bytesReceived);
 
-    if (serverMessage == "Ошибка отправки файла" || "Версия клиента не соответствует") {
+    if (serverMessage == "Ошибка отправки файла" || serverMessage == "Версия клиента не соответствует") {
         cout<<serverMessage<<endl;
         std::cerr << "Ошибка на сервере: " << serverMessage << std::endl;
         return;  
@@ -30,12 +31,11 @@ void receiveFile(int server_sock, const std::string& filename) {
         file.write(buffer, bytesReceived); 
 
         while ((bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0)) > 0) {
-            file.write(buffer, bytesReceived);
-            
-            if (bytesReceived < sizeof(buffer)) {
-                break;
-            }
+        if (std::string(buffer, bytesReceived) == "<END_OF_FILE>") {
+            break;
         }
+        file.write(buffer, bytesReceived);
+}
 
         if (bytesReceived < 0) {
             std::cerr << "Ошибка при получении данных\n";

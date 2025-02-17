@@ -14,7 +14,6 @@ void msgsend(int work_sock, string message){
 void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
     filesystem::path filePath(filename);
     std::string extension = filePath.extension().string();
-    cout<<extension<<endl;
     if ((extension == ".txt" and allow_txt == 0) or (extension == ".bin" and allow_bin == 0)){ //Проверка привелегий доступа
         string error = "Версия клиента не соответствует";
         msgsend(work_sock, error);
@@ -30,6 +29,7 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
             string error = "Ошибка отправки файла";
             msgsend(work_sock, error);
             errors(error, file_error, login);
+            return;
             //throw AllowError(std::string("Error open file"));
         }
         else{
@@ -37,7 +37,8 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
             while (file.read(buffer, sizeof(buffer))) {
                 send(work_sock, buffer, sizeof(buffer), 0);
             }
-            send(work_sock, buffer, file.gcount(), 0);  // Отправка последнего блока
+            const std::string EOF_MARKER = "<END_OF_FILE>";
+            send(work_sock, EOF_MARKER.c_str(), EOF_MARKER.size(), 0); // Отправка последнего блока
             file.close();
         }
     }
@@ -61,15 +62,15 @@ void interface(int work_sock, char arg,string path, string login, string version
             
         case 'd': //Запрос загрузки файла
             msgsend(work_sock, "Введите имя файла для загрузки:");
-            string filename;
+            char filename[1024];
             recv(work_sock, &filename, sizeof(filename), 0);
-            string fullPath = path + filename;
-
+            string fullPath = path + string(filename);
+            cout<<"FullPath: "<<fullPath<<endl;
             if (std::filesystem::exists(fullPath)) { //Проверка на существование искомого файла
                 bool allow_txt, allow_bin;
                 std::tie(allow_txt, allow_bin) = version_check(version, work_sock);
                 sleep(1);
-                filesend(work_sock, filename, allow_txt, allow_bin, login);
+                filesend(work_sock, fullPath, allow_txt, allow_bin, login);
             } else {
                 string error = "Файл с таким именем не существует";
                 msgsend(work_sock, error);
