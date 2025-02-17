@@ -4,3 +4,81 @@ Registration error:Mon Feb 17 22:08:13 2025
 :user-NONE
 Wrond password for user: andre:Mon Feb 17 22:08:52 2025
 :user-NONE
+Версия клиента не соответствует:Mon Feb 17 22:40:37 2025
+:user-andre
+error binding:Mon Feb 17 22:45:00 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:01 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:02 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:03 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:03 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:04 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:05 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:05 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:06 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:07 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:08 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:09 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:10 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:10 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:11 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:12 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:13 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:14 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:14 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:15 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:16 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:17 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:17 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:18 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:19 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:20 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:21 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:22 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:22 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:31 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:32 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:33 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:34 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:34 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:48 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:55 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:56 2025
+:user-NONE
+error binding:Mon Feb 17 22:45:57 2025
+:user-NONE

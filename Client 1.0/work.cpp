@@ -24,7 +24,7 @@ void receiveFile(int server_sock, const std::string& filename) {
         file.write(buffer, bytesReceived); 
 
         while ((bytesReceived = recv(server_sock, buffer, sizeof(buffer), 0)) > 0) {
-        if (std::string(buffer, bytesReceived) == "<END_OF_FILE>") {
+        if (std::string(buffer, bytesReceived).find("<END_OF_FILE>") != std::string::npos) {
             break;
         }
         file.write(buffer, bytesReceived);
@@ -73,7 +73,7 @@ int connection() { //Взаимодействие с сервером
     sockaddr_in server_addr; //Структура сервера
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_addr.s_addr = inet_addr("192.168.1.52"); //IP хоста
 
     if (connect(sock, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         std::cerr << "Ошибка соединения с сервером" << std::endl;

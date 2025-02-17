@@ -55,7 +55,7 @@ void interface(int work_sock, char arg,string path, string login, string version
             }
             if (!fileListStr.empty()) {
                 msgsend(work_sock, "Список файлов: "+ fileListStr+"\n\n");
-                sleep(1);
+                //sleep(1);
                 return;
             } else {
                 msgsend(work_sock, "Файлов нет.");
@@ -109,7 +109,7 @@ int Server::self_addr(string file_error){
     sockaddr_in * self_addr = new (sockaddr_in); //Структура сервера
     self_addr->sin_family = AF_INET;
     self_addr->sin_port = htons(8080);
-    self_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
+    self_addr->sin_addr.s_addr = inet_addr("192.168.1.52"); //IP хоста
     
     cout << "Wait for connect client...\n";
     int b = bind(s,(const sockaddr*) self_addr,sizeof(sockaddr_in));
