@@ -1,38 +1,35 @@
 #include "head.h"
-string file_error = "error.txt";
-string base_file = "base.txt";
-string user_log = "usrlog.txt";
 
-void msgsend(int work_sock, string message){
-    char buffer[4096];  // Используем локальный массив, чтобы избежать утечек памяти
-    memset(buffer, 0, sizeof(buffer));  // Заполняем нулями
-    strncpy(buffer, message.c_str(), sizeof(buffer) - 1);  // Копируем с ограничением
-    if (send(work_sock, buffer, strlen(buffer)+1, 0) == -1) {
+string file_error = "error.txt"; //Файл для ошибок сетевого взаимодействия
+string base_file = "base.txt"; //Файл с базой данных пользователей
+string user_log = "usrlog.txt"; //Файл с данными о сессиях пользователей
+
+void msgsend(int work_sock, string message){ //Отправка сообщения
+    char buffer[4096];  
+    memset(buffer, 0, sizeof(buffer));  
+    strncpy(buffer, message.c_str(), sizeof(buffer) - 1);  
+    if (send(work_sock, buffer, strlen(buffer)+1, 0) == -1) { //Проверка на корректность передачи
         cerr << "Ошибка отправки сообщения" << endl;
         close(work_sock);
         throw runtime_error("Client disconnected unexpectedly");
     }
 }
 
-void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){ 
+void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, string login ){  //Функция отправки файла
     filesystem::path filePath(filename);
     std::string extension = filePath.extension().string();
     if ((extension == ".txt" and allow_txt == 0) or (extension == ".bin" and allow_bin == 0)){ //Проверка привелегий доступа
         string error = "Версия клиента не соответствует";
         msgsend(work_sock, error);
         errors(error, file_error, login);
-        //throw AllowError(std::string("Permission Denied"));
-        //return;
     }
 
     else{ //Отправка файла
         std::ifstream file(filePath, std::ios::binary);  // Открываем файл в бинарном режиме
-        if (!file) {
+        if (!file) { //Удалось ли открыть файл
             string error = "Ошибка отправки файла";
             msgsend(work_sock, error);
             errors(error, file_error, login);
-            //return;
-            //throw AllowError(std::string("Error open file"));
         }
         else{
             char buffer[4096];
@@ -46,7 +43,7 @@ void filesend(int work_sock, string filename, bool allow_txt, bool allow_bin, st
     }
 }
 
-void interface(int work_sock, char arg,string path, string login, string version){
+void interface(int work_sock, char arg,string path, string login, string version){ //Интерфейс
     string fileListStr;
     switch(arg){
         case 'l': //Список всех файлов
@@ -55,7 +52,6 @@ void interface(int work_sock, char arg,string path, string login, string version
             }
             if (!fileListStr.empty()) {
                 msgsend(work_sock, "Список файлов: "+ fileListStr+"\n\n");
-                //sleep(1);
                 return;
             } else {
                 msgsend(work_sock, "Файлов нет.");
@@ -94,7 +90,7 @@ void errors(string error, string name, string login){ //Запись ошибк�
     }
 }
 
-void log_session_end(const string& login) {
+void log_session_end(const string& login) { //Запись в файл сообщения о закрытии сессии пользователя
     ofstream log(user_log, ios::app);
     if (log.is_open()) {
         time_t seconds = time(NULL);
@@ -103,7 +99,7 @@ void log_session_end(const string& login) {
     }
 }
 
-int Server::self_addr(string file_error){ 
+int Server::self_addr(string file_error){  //Структура сервера и создание сокета
     int s = socket(AF_INET, SOCK_STREAM, 0);
     
     sockaddr_in * self_addr = new (sockaddr_in); //Структура сервера
@@ -120,12 +116,12 @@ int Server::self_addr(string file_error){
         throw BindingError(std::string("Binding error"));
         return false; //
     }
-    listen(s, 5);
+    listen(s, 5); //Ожидание клиента с возможностью одновременного подключения 5 программ
     return s;
 }
 
-int Server::client_addr(int s, string file_error){
-    sockaddr_in * client_addr = new sockaddr_in; //Структура клиента
+int Server::client_addr(int s, string file_error){ //Структура клиента
+    sockaddr_in * client_addr = new sockaddr_in; 
     socklen_t len = sizeof (sockaddr_in);
     int work_sock = accept(s, (sockaddr*)(client_addr), &len);
     if(work_sock == -1) {
@@ -141,9 +137,9 @@ int Server::client_addr(int s, string file_error){
     }
 }
 
-bool find_login(const std::string& base_file, const std::string& target_login) {
+bool find_login(const std::string& base_file, const std::string& target_login) { //Поиск введенного логина в БД пользователей
     std::ifstream file(base_file);
-    if (!file.is_open()) {
+    if (!file.is_open()) { //Удалось ли открыть файл
         std::cerr << "Ошибка открытия файла\n";
         return false;
     }
@@ -152,13 +148,9 @@ bool find_login(const std::string& base_file, const std::string& target_login) {
     while (std::getline(file, line)) {  
         std::istringstream iss(line);
         std::string login;
-        //cout<<"Логин найден"<<endl;
         if (std::getline(iss, login, ':')) { 
-            //cout<<"login: "<<login<<endl;
-            //cout<<"target_login: "<<target_login<<endl;
             if (login == target_login) {
                 file.close();
-                //cout<<"file closed "<<endl;
                 return true; // Логин найден
             }
         }
@@ -167,7 +159,7 @@ bool find_login(const std::string& base_file, const std::string& target_login) {
     return false; // Логин не найден
 }
 
-std::string find_password(const std::string& base_file, const std::string& target_login) {
+std::string find_password(const std::string& base_file, const std::string& target_login) { //Поиск по логину введенного пароля в БД пользователей
     std::ifstream file(base_file);
     if (!file.is_open()) {
         std::cerr << "Ошибка открытия файла\n";
@@ -181,15 +173,15 @@ std::string find_password(const std::string& base_file, const std::string& targe
         
         if (std::getline(iss, login, ':') && std::getline(iss, password)) {
             if (login == target_login) {
-                return password; // Найден пароль для нужного логина
+                return password; //Найден пароль для нужного логина
             }
         }
     }
-    return ""; // Если логин не найден
+    return ""; //Если логин не найден
 }
 
 
-std::tuple<bool,bool> version_check(string version, int work_sock){
+std::tuple<bool,bool> version_check(string version, int work_sock){ //Выдача привелегий в зависимости от версии
     if (version == "1.0"){
         bool allow_txt = 1;
         bool allow_bin = 0;
@@ -209,14 +201,14 @@ std::tuple<bool,bool> version_check(string version, int work_sock){
     
 }
 
-void authorization(int work_sock,string salt, string base_file){
+void authorization(int work_sock,string salt, string base_file){ //Функция регистрации пользователя
     string login = "SYSTEM";
     char mess[512];
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
     recv(work_sock, &mess, sizeof(mess), 0);
     string mess_str(mess);
 
-    if(mess_str == "регистрация"){
+    if(mess_str == "регистрация"){ //Если пользователь хочет зарегистрироваться
         char *new_log = new char[1024];
         char *new_pass = new char[1024];
         
@@ -246,7 +238,7 @@ void authorization(int work_sock,string salt, string base_file){
         msgsend(work_sock, "Регистрация успешно завершена\n");
         sleep(1);
     }
-    else if(mess_str != "вход" && mess_str != "регистрация"){
+    else if(mess_str != "вход" && mess_str != "регистрация"){ //Введен некорректный параметр
 
         string error = "Registration error";
         msgsend(work_sock, error);
@@ -282,7 +274,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
         }
         login = string(msg);
         bool log_exist = find_login(base_file, login);
-        if (!log_exist) {
+        if (!log_exist) { //Введен несуществующий логин
             error = "Ошибка логина";
             errors(error, file_error);
             msgsend(work_sock, "Введите логин заново");
@@ -292,12 +284,14 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
         }
     }
     // Отправка соли клиенту
-    sleep(1);
+    sleep(1); //Пауза между пересылками, чтобы не перепутать пакеты
     msgsend(work_sock, salt);
     string pass = find_password(base_file, login);
     sleep(1);
     msgsend(work_sock, "Введите пароль");
 
+    /*Даем пользователю 3 попытки на ввод пароля
+    Если все 3 попытки неудачные - закрываем соединение*/
     int attempts = 0;
     while (attempts < 3) {
         char get_pass[2048] = {0};
@@ -308,9 +302,9 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             return 1;
         }
         string received_pass(get_pass);
-        received_pass.erase(received_pass.find_last_not_of("\r\n") + 1);
+        received_pass.erase(received_pass.find_last_not_of("\r\n") + 1); //Обработка полученных данных для корректной работы с ними
     
-        if (pass == received_pass) {
+        if (pass == received_pass) { //Если введен верный пароль
             msgsend(work_sock, "OK");
             ofstream log;
             log.open(user_log, ios::app);
@@ -322,7 +316,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             log.close();
 
             bool flag = 1;
-            while (flag) {
+            while (flag) { //Запускаем интерфейс пока клиент не захочет выйти из него
                 //sleep(1);
                 msgsend(work_sock, "Введите нужный параметр: \n l - список файлов \n d - загрузка файлов \n q - выход");
                 char arg[512] = {0};
@@ -342,13 +336,13 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
                 }
             }
             return 0;
-        } else {
+        } else { //Если введен неправильный пароль
             attempts++;
             if (attempts < 3) {
                 msgsend(work_sock, "Неверный пароль. Попробуйте снова.");
                 error = "Wrond password for user: ";
                 errors(error+login, file_error);
-            } else {
+            } else { //Использовано 3 попытки входа
                 error = "Ошибка пароля. Превышено количество попыток";
                 msgsend(work_sock, error);
                 errors(error, file_error);
@@ -357,13 +351,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
             }
         }
     }
-    ofstream log;
-    log.open(user_log, ios::app);
-    if(log.is_open()){
-        time_t seconds = time(NULL);
-        tm* timeinfo = localtime(&seconds);
-        log<<"Session ended for user"<<":"<<login<<":"<<asctime(timeinfo)<<endl;
-    }
+    log_session_end(login); //Запись сообщения о закрытии сессии
     close(work_sock);
     return 1;
 }

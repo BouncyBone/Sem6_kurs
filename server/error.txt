@@ -84,3 +84,7 @@ error binding:Mon Feb 17 22:45:57 2025
 :user-NONE
 Версия клиента не соответствует:Mon Feb 17 23:05:26 2025
 :user-andre
+Версия клиента не соответствует:Mon Feb 17 23:11:24 2025
+:user-andre
+Wrond password for user: user2:Tue Feb 18 17:03:14 2025
+:user-NONE
