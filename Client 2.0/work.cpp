@@ -64,6 +64,27 @@ string MD(string password,string salt){ // Кодирование пароля
     return(hashq);
 }
 
+void disableEcho() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+void enableEcho() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+void resetTerminal() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= (ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
 int connection() { //Взаимодействие с сервером
     int sock = socket(AF_INET, SOCK_STREAM, 0); //Создание сокета
     if (sock == -1) {
@@ -74,7 +95,7 @@ int connection() { //Взаимодействие с сервером
     sockaddr_in server_addr; //Структура сервера
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
-    server_addr.sin_addr.s_addr = inet_addr("192.168.1.52"); //IP хоста
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //IP хоста
 
     if (connect(sock, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         std::cerr << "Ошибка соединения с сервером" << std::endl;
@@ -98,14 +119,30 @@ int connection() { //Взаимодействие с сервером
 
     if (command == "регистрация") { //Регистрация
         std::string login, password;
+        char ans[1024] = {0};
         receiveMessage(sock); //Введите логин
-        std::cin >> login;
-        sendMessage(sock, login); //Отправка логина
+        while(true){
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cin >> login;
+            sendMessage(sock, login); //Отправка логина
+            char flag[1024]={0};
+            recv(sock, flag, sizeof(flag)-1,0); //Проверка корректности логина
+            string flg(flag);
+            if (flg.find("OK")!= std::string::npos){
+                break;
+            }
+            else{
+                cout<<flg<<endl;
+            }
+        }
 
         char salt[1024] = {0};
         recv(sock, salt, sizeof(salt)-1, 0); //Прием соли
-        receiveMessage(sock);
+        receiveMessage(sock); // Введите пароль
+        disableEcho();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cin >> password;
+        enableEcho();
         password+=string(salt);
         string hashq = MD(password,salt); //Хэшироавние пароля
         sendMessage(sock, hashq);
@@ -135,7 +172,10 @@ int connection() { //Взаимодействие с сервером
     sleep(1);
     receiveMessage(sock); //Введите пароль
     while (true){
+        disableEcho();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cin >> password;
+        enableEcho();
         password+=string(salt);
         string hashq = MD(password,salt); //Хэширование пароля
         sendMessage(sock, hashq);
@@ -156,29 +196,30 @@ int connection() { //Взаимодействие с сервером
         }
     }
     
-    char option;
+    string option;
     while (true) { //Интерфейс
         receiveMessage(sock);
         while (true){ //Проверка правильности введенного аргумента
-            std::cin >> option;
-            if (option != 'q' && option != 'd' && option != 'l'){ 
+            std::getline(std::cin, option);
+            if (option.length()!= 1 || (option[0] != 'q' && option[0] != 'd' && option[0] != 'l')){ 
                 cout<<"Введен неправильный аргумент"<<endl;
             }
             else{
                 break;
             }
         }
-        
-        send(sock, &option, sizeof(option), 0); //Отправка запроса в интерфейсе
-        if (option == 'l') {
+        char opt = option[0];
+        send(sock, &opt, sizeof(opt), 0); //Отправка запроса в интерфейсе
+        if (option[0] == 'l') {
             receiveMessage(sock);
-        } else if (option == 'd') {
+        } else if (option[0] == 'd') {
             receiveMessage(sock);
             std::string filename;
             std::cin >> filename;
             sendMessage(sock, filename);
             receiveFile(sock, filename);
-        } else if (option == 'q') {
+        } else if (option[0] == 'q') {
+            resetTerminal();
             break;
         }
         sleep(1);
@@ -192,4 +233,5 @@ int connection() { //Взаимодействие с сервером
 
 int main(int argc, char *argv[]){
     connection();
+    resetTerminal();
 }

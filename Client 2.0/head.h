@@ -15,6 +15,7 @@
 #include <tuple>
 #include <getopt.h>
 #include <cryptopp/hex.h> // HexEncoder
+#include <termios.h>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 using namespace CryptoPP;
 using namespace std;
