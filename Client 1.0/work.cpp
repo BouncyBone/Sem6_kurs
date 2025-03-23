@@ -74,7 +74,7 @@ int connection() { //Взаимодействие с сервером
     sockaddr_in server_addr; //Структура сервера
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
-    server_addr.sin_addr.s_addr = inet_addr("192.168.1.52"); //IP хоста
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //IP хоста
 
     if (connect(sock, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         std::cerr << "Ошибка соединения с сервером" << std::endl;
@@ -98,13 +98,25 @@ int connection() { //Взаимодействие с сервером
 
     if (command == "регистрация") { //Регистрация
         std::string login, password;
+        char ans[1024] = {0};
         receiveMessage(sock); //Введите логин
-        std::cin >> login;
-        sendMessage(sock, login); //Отправка логина
+        while(true){
+            std::cin >> login;
+            sendMessage(sock, login); //Отправка логина
+            char flag[1024]={0};
+            recv(sock, flag, sizeof(flag)-1,0); //Проверка корректности логина
+            string flg(flag);
+            if (flg.find("OK")!= std::string::npos){
+                break;
+            }
+            else{
+                cout<<flg<<endl;
+            }
+        }
 
         char salt[1024] = {0};
         recv(sock, salt, sizeof(salt)-1, 0); //Прием соли
-        receiveMessage(sock);
+        receiveMessage(sock); // Введите пароль
         std::cin >> password;
         password+=string(salt);
         string hashq = MD(password,salt); //Хэшироавние пароля

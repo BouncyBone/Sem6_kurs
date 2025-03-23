@@ -105,7 +105,7 @@ int Server::self_addr(string file_error){  //Структура сервера �
     sockaddr_in * self_addr = new (sockaddr_in); //Структура сервера
     self_addr->sin_family = AF_INET;
     self_addr->sin_port = htons(8080);
-    self_addr->sin_addr.s_addr = inet_addr("192.168.1.52"); //IP хоста
+    self_addr->sin_addr.s_addr = inet_addr("127.0.0.1"); //IP хоста
     
     cout << "Wait for connect client...\n";
     int b = bind(s,(const sockaddr*) self_addr,sizeof(sockaddr_in));
@@ -203,6 +203,7 @@ std::tuple<bool,bool> version_check(string version, int work_sock){ //Выдач
 
 void authorization(int work_sock,string salt, string base_file){ //Функция регистрации пользователя
     string login = "SYSTEM";
+    bool uniq = 0;
     char mess[512];
     msgsend(work_sock, "Введите 'вход', если хотите зарегистрироваться или 'регистрация' для регистрации");
     recv(work_sock, &mess, sizeof(mess), 0);
@@ -213,13 +214,27 @@ void authorization(int work_sock,string salt, string base_file){ //Функци�
         char *new_pass = new char[1024];
         
         msgsend(work_sock, "Введите логин");
-        if (recv(work_sock, new_log, 1024, 0)<=0){
-            cerr << "Client disconnected during registration" << endl;
-            close(work_sock);
-            return;
+        while(uniq !=1){ // Проверка на дублирование логинов
+            if (recv(work_sock, new_log, 1024, 0)<=0){
+                cerr << "Client disconnected during registration" << endl;
+                close(work_sock);
+                return;
+            }
+            new_log[1023] = '\0';
+            
+            if(!find_login(base_file, new_log)){
+                msgsend(work_sock, "OK");
+                uniq = 1;
+            }
+            else{
+                msgsend(work_sock, "Этот логин уже занят. Введите другой: ");
+                memset(new_log, 0, sizeof(new_log)); 
+            }
         }
-        new_log[1023] = '\0';
+
+        sleep(1);
         msgsend(work_sock, salt);
+        sleep(1);
 
         msgsend(work_sock, "Введите пароль");
         if (recv(work_sock, new_pass, 1024, 0)<=0){
