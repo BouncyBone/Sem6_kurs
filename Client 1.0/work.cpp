@@ -217,6 +217,7 @@ int connection() { //Взаимодействие с сервером
             receiveMessage(sock);
             std::string filename;
             std::cin >> filename;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             sendMessage(sock, filename);
             receiveFile(sock, filename);
         } else if (option[0] == 'q') {
