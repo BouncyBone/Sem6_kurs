@@ -169,7 +169,7 @@ int connection() { //Взаимодействие с сервером
 
     char salt[2048] = {0};
     recv(sock, salt, sizeof(salt) - 1, 0); //Прием соли
-    sleep(1);
+    //sleep(1);
     receiveMessage(sock); //Введите пароль
     while (true){
         disableEcho();
@@ -197,6 +197,7 @@ int connection() { //Взаимодействие с сервером
     }
     
     string option;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     while (true) { //Интерфейс
         receiveMessage(sock);
         while (true){ //Проверка правильности введенного аргумента

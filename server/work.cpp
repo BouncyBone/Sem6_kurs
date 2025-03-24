@@ -51,7 +51,7 @@ void interface(int work_sock, char arg,string path, string login, string version
                 fileListStr += entry.path().filename().string() + "   ";
             }
             if (!fileListStr.empty()) {
-                msgsend(work_sock, "Список файлов: "+ fileListStr+"\n\n");
+                msgsend(work_sock, "Список файлов: "+ fileListStr+"\n");
                 return;
             } else {
                 msgsend(work_sock, "Файлов нет.");
@@ -302,7 +302,7 @@ int autorized(int work_sock, string base_file, string file_error, string user_lo
     sleep(1); //Пауза между пересылками, чтобы не перепутать пакеты
     msgsend(work_sock, salt);
     string pass = find_password(base_file, login);
-    sleep(1);
+    //sleep(1);
     msgsend(work_sock, "Введите пароль");
 
     /*Даем пользователю 3 попытки на ввод пароля

@@ -252,3 +252,5 @@ Wrond password for user: andre:Sun Mar 23 23:06:19 2025
 :user-NONE
 Wrond password for user: andre:Sun Mar 23 23:06:19 2025
 :user-NONE
+Версия клиента не соответствует:Sun Mar 23 23:34:59 2025
+:user-andre
